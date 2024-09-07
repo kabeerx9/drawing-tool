@@ -5,7 +5,6 @@ import { socket } from '@/app/socket';
 import { changeBrushSize, changeColor } from '@/app/store/slices/toolbox-slice';
 import { COLORS, MENU_ITEMS } from '@/app/utils/constants';
 import { Box } from 'lucide-react';
-import { useEffect } from 'react';
 
 const Toolbox = () => {
 	const dispatch = useAppDispatch();
