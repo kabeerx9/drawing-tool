@@ -5,6 +5,8 @@ import { setActionMenuItem } from '@/app/store/slices/menu-slice';
 import { MENU_ITEMS } from '@/app/utils/constants';
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 
+import { socket } from '@/app/socket';
+
 const Board = () => {
 	const dispatch = useAppDispatch();
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -108,6 +110,10 @@ const Board = () => {
 			isDrawing.current = false;
 			context.closePath();
 		};
+
+		socket.on('connect', () => {
+			console.log('Connected to the server');
+		});
 
 		canvas.addEventListener('mousedown', handleMouseDown);
 		canvas.addEventListener('mousemove', handleMouseMove);
