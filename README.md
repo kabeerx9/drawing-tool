@@ -29,7 +29,7 @@ drawing-tool/
 1. Clone the repository:
 
    ```
-   git clone https://github.com/yourusername/drawing-tool.git
+   git clone https://github.com/kabeerx9/drawing-tool.git
    cd drawing-tool
    ```
 
