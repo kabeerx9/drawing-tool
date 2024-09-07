@@ -36,6 +36,6 @@ app.get('/', (req, res) => {
 	res.send('Server is running');
 });
 
-httpServer.listen(5000, () => {
+httpServer.listen(5001, () => {
 	console.log('SERVER IS RUNNING');
 });
