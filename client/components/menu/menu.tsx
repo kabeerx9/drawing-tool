@@ -11,12 +11,9 @@ import cx from 'classnames';
 const Menu = () => {
 	const dispatch = useAppDispatch();
 	const activeMenuItem = useAppSelector((state) => state.menu.activeMenuItem);
-
-	const showStrokeToolOptions = activeMenuItem === MENU_ITEMS.PENCIL;
-
-	const showBrushToolOption =
-		activeMenuItem === MENU_ITEMS.PENCIL ||
-		activeMenuItem === MENU_ITEMS.ERASER;
+	const handleActionItem = (item: string) => {
+		dispatch(setActionMenuItem(item));
+	};
 
 	return (
 		<div className="z-20 flex px-4 bg-gray-200 text-black  w-full md:w-1/2 h-12 items-center justify-between">
@@ -38,15 +35,15 @@ const Menu = () => {
 			</div>
 			<Undo
 				className="cursor-pointer hover:opacity-50"
-				onClick={() => dispatch(setActionMenuItem(MENU_ITEMS.UNDO))}
+				onClick={() => handleActionItem(MENU_ITEMS.UNDO)}
 			/>
 			<Redo
 				className="cursor-pointer hover:opacity-50"
-				onClick={() => dispatch(setActionMenuItem(MENU_ITEMS.REDO))}
+				onClick={() => handleActionItem(MENU_ITEMS.REDO)}
 			/>
 			<Download
 				className="cursor-pointer hover:opacity-50"
-				onClick={() => dispatch(setActionMenuItem(MENU_ITEMS.DOWNLOAD))}
+				onClick={() => handleActionItem(MENU_ITEMS.DOWNLOAD)}
 			/>
 		</div>
 	);

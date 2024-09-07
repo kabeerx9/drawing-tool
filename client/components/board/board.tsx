@@ -1,15 +1,57 @@
 'use client';
 
-import { useAppSelector } from '@/app/hooks';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { setActionMenuItem } from '@/app/store/slices/menu-slice';
+import { MENU_ITEMS } from '@/app/utils/constants';
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 
 const Board = () => {
+	const dispatch = useAppDispatch();
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const isDrawing = useRef(false);
-	const activeMenuItem = useAppSelector((state) => state.menu.activeMenuItem);
+
+	const drawHistory = useRef<ImageData[]>([]);
+	const drawIndex = useRef(0);
+
+	const { activeMenuItem, actionMenuItem } = useAppSelector(
+		(state) => state.menu
+	);
 	const { color, size } = useAppSelector(
 		(state) => state.toolbox[activeMenuItem]
 	);
+
+	useEffect(() => {
+		if (!canvasRef.current) return;
+		const canvas = canvasRef.current;
+		const context = canvas.getContext('2d');
+
+		if (actionMenuItem === MENU_ITEMS.DOWNLOAD) {
+			const URL = canvas.toDataURL();
+			// this URL is a base64 string of the canvas image
+
+			const a = document.createElement('a');
+			a.download = 'sketch.jpg';
+			a.href = URL;
+			a.click();
+		} else if (actionMenuItem === MENU_ITEMS.UNDO) {
+			if (drawIndex.current === 0) {
+				context?.clearRect(0, 0, canvas.width, canvas.height);
+			}
+
+			if (drawIndex.current > 0) {
+				drawIndex.current -= 1;
+				const imageData = drawHistory.current[drawIndex.current];
+				context?.putImageData(imageData, 0, 0);
+			}
+		} else if (actionMenuItem === MENU_ITEMS.REDO) {
+			if (drawIndex.current < drawHistory.current.length - 1) {
+				drawIndex.current++;
+				const imageData = drawHistory.current[drawIndex.current];
+				context?.putImageData(imageData, 0, 0);
+			}
+		}
+		dispatch(setActionMenuItem(null));
+	}, [actionMenuItem, dispatch]);
 
 	useEffect(() => {
 		if (!canvasRef.current) return;
@@ -57,6 +99,12 @@ const Board = () => {
 		};
 
 		const handleMouseUp = () => {
+			// whenever we move the mouse up we need to save the path to the drawHistory
+			const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+			drawHistory.current.push(imageData);
+
+			drawIndex.current = drawHistory.current.length - 1;
+
 			isDrawing.current = false;
 			context.closePath();
 		};
