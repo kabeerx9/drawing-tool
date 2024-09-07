@@ -1,9 +1,9 @@
 import { COLORS, MENU_ITEMS } from '@/app/utils/constants';
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
 	[MENU_ITEMS.PENCIL]: {
-		color: COLORS.WHITE,
+		color: COLORS.BLACK,
 		size: 3,
 	},
 	[MENU_ITEMS.ERASER]: {
