@@ -6,6 +6,7 @@ import { MENU_ITEMS } from '@/app/utils/constants';
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 
 import { socket } from '@/app/socket';
+import { changeBrushSize, changeColor } from '@/app/store/slices/toolbox-slice';
 
 const Board = () => {
 	const dispatch = useAppDispatch();
@@ -93,11 +94,17 @@ const Board = () => {
 		const handleMouseDown = (e: MouseEvent) => {
 			isDrawing.current = true;
 			beginPath(e.clientX, e.clientY);
+
+			// socket.emit means we are sending a message to the server
+			socket.emit('beginPath', { x: e.clientX, y: e.clientY });
 		};
 
 		const handleMouseMove = (e: MouseEvent) => {
 			if (!isDrawing.current) return;
 			drawLine(e.clientX, e.clientY);
+
+			// socket.emit means we are sending a message to the server
+			socket.emit('drawLine', { x: e.clientX, y: e.clientY });
 		};
 
 		const handleMouseUp = () => {
@@ -115,18 +122,48 @@ const Board = () => {
 			console.log('Connected to the server');
 		});
 
+		const changeConfigWebSocket = (data: {
+			item: string;
+			size: string;
+			color: string;
+		}) => {
+			console.log('Websocket change config was fired ', data);
+			if (data.color) {
+				dispatch(changeColor({ item: activeMenuItem, color: data.color }));
+			}
+			if (data.size) {
+				dispatch(changeBrushSize({ item: activeMenuItem, size: data.size }));
+			}
+		};
+
 		canvas.addEventListener('mousedown', handleMouseDown);
 		canvas.addEventListener('mousemove', handleMouseMove);
 		canvas.addEventListener('mouseup', handleMouseUp);
+
+		// socket.on means we are listening to the server
+
+		const handleBeginPath = (data: { x: number; y: number }) => {
+			beginPath(data.x, data.y);
+		};
+
+		const handleDrawLine = (data: { x: number; y: number }) => {
+			drawLine(data.x, data.y);
+		};
+
+		socket.on('beginPath', handleBeginPath);
+		socket.on('drawLine', handleDrawLine);
+		socket.on('changeConfig', changeConfigWebSocket);
 
 		return () => {
 			canvas.removeEventListener('mousedown', handleMouseDown);
 			canvas.removeEventListener('mousemove', handleMouseMove);
 			canvas.removeEventListener('mouseup', handleMouseUp);
+
+			socket.off('beginPath', handleBeginPath);
+			socket.off('drawLine', handleDrawLine);
+			socket.off('changeConfig', changeConfigWebSocket);
 		};
 	}, []);
-
-	console.log(color, size);
 
 	return (
 		<canvas

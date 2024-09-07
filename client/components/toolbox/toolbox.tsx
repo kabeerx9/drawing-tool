@@ -1,9 +1,11 @@
 'use client';
 
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
+import { socket } from '@/app/socket';
 import { changeBrushSize, changeColor } from '@/app/store/slices/toolbox-slice';
 import { COLORS, MENU_ITEMS } from '@/app/utils/constants';
 import { Box } from 'lucide-react';
+import { useEffect } from 'react';
 
 const Toolbox = () => {
 	const dispatch = useAppDispatch();
@@ -20,10 +22,18 @@ const Toolbox = () => {
 
 	const handleStrokeWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		dispatch(changeBrushSize({ item: activeMenuItem, size: e.target.value }));
+		socket.emit('changeConfig', {
+			item: activeMenuItem,
+			size: e.target.value,
+		});
 	};
 
 	const handleColorChange = (color: string) => {
 		dispatch(changeColor({ item: activeMenuItem, color }));
+		socket.emit('changeConfig', {
+			item: activeMenuItem,
+			color,
+		});
 	};
 
 	return (
