@@ -1,10 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
 
-import menuReducer from './slices/menu-slice';
+import MenuReducer from './slices/menu-slice';
+import ToolboxReducer from './slices/toolbox-slice';
 
 export const store = configureStore({
 	reducer: {
-		menu: menuReducer,
+		menu: MenuReducer,
+		toolbox: ToolboxReducer,
 	},
 });
 

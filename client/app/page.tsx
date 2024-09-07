@@ -7,7 +7,9 @@ const Page = () => {
 	return (
 		<div className="w-full h-full flex flex-col items-center">
 			<Menu />
-			<Toolbox />
+			<div className="flex items-start w-full">
+				<Toolbox />
+			</div>
 			<Board />
 		</div>
 	);
