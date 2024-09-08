@@ -1,4 +1,32 @@
-version: '3.8'
+# version: '3.8'
+
+# services:
+#   client:
+#     build:
+#       context: ./client
+#       dockerfile: Dockerfile
+#     ports:
+#       - '3000:3000'
+#     volumes:
+#       - ./client:/app
+#       - /app/node_modules
+#     environment:
+#       - NODE_ENV=development
+#     command: npm run dev
+
+#   server:
+#     build:
+#       context: ./server
+#       dockerfile: Dockerfile
+#     ports:
+#       - '5001:5001'
+#     volumes:
+#       - ./server:/app
+#       - /app/node_modules
+#     environment:
+#       - NODE_ENV=development
+#     command: npm start
+version: '3'
 
 services:
   client:
@@ -7,12 +35,12 @@ services:
       dockerfile: Dockerfile
     ports:
       - '3000:3000'
-    volumes:
-      - ./client:/app
-      - /app/node_modules
     environment:
-      - NODE_ENV=development
-    command: npm run dev
+      - NEXT_PUBLIC_SOCKET_URL=http://localhost:5001
+    depends_on:
+      - server
+    networks:
+      - app-network
 
   server:
     build:
@@ -20,9 +48,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - '5001:5001'
-    volumes:
-      - ./server:/app
-      - /app/node_modules
     environment:
-      - NODE_ENV=development
-    command: npm start
+      - CLIENT_URL=http://localhost:3000
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
