@@ -7,8 +7,10 @@ import React, { useEffect, useLayoutEffect, useRef } from 'react';
 
 import { socket } from '@/app/socket';
 import { changeBrushSize, changeColor } from '@/app/store/slices/toolbox-slice';
+import RemoteCursor from '../cursor/remote-cursor';
+import { IUser } from '@/app/page';
 
-const Board = () => {
+const Board = ({ connectedUsers }: { connectedUsers: IUser[] }) => {
 	const dispatch = useAppDispatch();
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const isDrawing = useRef(false);
@@ -102,6 +104,11 @@ const Board = () => {
 		};
 
 		const handleMouseMove = (e: MouseEvent) => {
+			socket.emit('cursor-move', {
+				x: e.clientX,
+				y: e.clientY,
+				userId: `${socket.id}`,
+			});
 			if (!isDrawing.current) return;
 			drawLine(e.clientX, e.clientY);
 
@@ -119,10 +126,6 @@ const Board = () => {
 			isDrawing.current = false;
 			context.closePath();
 		};
-
-		socket.on('connect', () => {
-			console.log('Connected to the server');
-		});
 
 		const changeConfigWebSocket = (data: {
 			item: string;
@@ -168,10 +171,15 @@ const Board = () => {
 	}, []);
 
 	return (
-		<canvas
-			ref={canvasRef}
-			className="absolute top-0 left-0 w-full h-full bg-white"
-		/>
+		<>
+			<canvas
+				ref={canvasRef}
+				className="absolute top-0 left-0 w-full h-full bg-white"
+			/>
+			{connectedUsers?.map((user) => (
+				<RemoteCursor key={user.id} name={user.name} color={user.color} />
+			))}
+		</>
 	);
 };
 
