@@ -1,7 +1,6 @@
 import Board from '@/components/board/board';
 import Menu from '@/components/menu/menu';
 import Toolbox from '@/components/toolbox/toolbox';
-import React from 'react';
 
 const Page = () => {
 	return (

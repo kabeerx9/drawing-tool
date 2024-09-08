@@ -52,6 +52,8 @@ const Board = () => {
 				const imageData = drawHistory.current[drawIndex.current];
 				context?.putImageData(imageData, 0, 0);
 			}
+		} else if (actionMenuItem === MENU_ITEMS.DELETE) {
+			context?.clearRect(0, 0, canvas.width, canvas.height);
 		}
 		dispatch(setActionMenuItem(null));
 	}, [actionMenuItem, dispatch]);

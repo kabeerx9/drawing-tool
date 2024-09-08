@@ -5,8 +5,10 @@ import {
 	setActiveMenuItem,
 } from '@/app/store/slices/menu-slice';
 import { MENU_ITEMS } from '@/app/utils/constants';
-import { Download, Eraser, Pencil, Redo, Undo } from 'lucide-react';
+import { Download, Eraser, Pencil, Redo, Trash, Undo } from 'lucide-react';
 import cx from 'classnames';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 const Menu = () => {
 	const dispatch = useAppDispatch();
@@ -14,6 +16,10 @@ const Menu = () => {
 	const handleActionItem = (item: string) => {
 		dispatch(setActionMenuItem(item));
 	};
+
+	useEffect(() => {
+		toast.success('Welcome to the canvas');
+	}, []);
 
 	return (
 		<div className="z-20 flex px-4 bg-gray-200 text-black  w-full md:w-1/2 h-12 items-center justify-between">
@@ -44,6 +50,10 @@ const Menu = () => {
 			<Download
 				className="cursor-pointer hover:opacity-50"
 				onClick={() => handleActionItem(MENU_ITEMS.DOWNLOAD)}
+			/>
+			<Trash
+				className="cursor-pointer hover:opacity-50"
+				onClick={() => handleActionItem(MENU_ITEMS.DELETE)}
 			/>
 		</div>
 	);
