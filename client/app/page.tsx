@@ -20,7 +20,7 @@ const Page = () => {
 
 	useEffect(() => {
 		socket.on('user-list', (users) => {
-			console.log('User - list event got triggered');
+			console.log('User - list event got triggered with users as', users);
 			setConnectedUsers(users);
 		});
 

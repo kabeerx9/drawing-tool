@@ -38,7 +38,11 @@ const handleAddUser = (socket) => {
 
 	// Whenever a new user is added we also need to emit a message to all connected users
 
+	// sending it to the new user
 	socket.emit('user-list', connectedUsers);
+
+	// sending it to all other users
+	socket.broadcast.emit('user-list', connectedUsers);
 
 	// We also need to emit a message to all connected users that a new user has joined
 	socket.broadcast.emit('user-joined', userData);
