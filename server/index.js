@@ -10,12 +10,25 @@ const io = new Server(httpServer, {
 	cors: {},
 });
 
+const RANDOM_NAMES = [
+	'Alice',
+	'Bob',
+	'Charlie',
+	'David',
+	'Eve',
+	'Frank',
+	'Grace',
+	'Hank',
+	'Ivy',
+	'Jack',
+];
+
 let connectedUsers = [];
 
 const handleAddUser = (socket) => {
 	const userData = {
 		id: socket.id,
-		name: `User ${connectedUsers.length + 1}`,
+		name: RANDOM_NAMES[connectedUsers.length],
 		color: '#' + Math.floor(Math.random() * 16777215).toString(16),
 	};
 
@@ -24,6 +37,7 @@ const handleAddUser = (socket) => {
 	console.log('Connected users: ', connectedUsers);
 
 	// Whenever a new user is added we also need to emit a message to all connected users
+
 	socket.emit('user-list', connectedUsers);
 
 	// We also need to emit a message to all connected users that a new user has joined
@@ -43,7 +57,7 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('cursor-move', (data) => {
-		console.log('Cursor move fired with data ', data);
+		// console.log('Cursor move fired with data ', data);
 		socket.broadcast.emit('cursor-move', data);
 	});
 
@@ -52,7 +66,7 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('changeConfig', (data) => {
-		console.log('Change config fired with data ', data);
+		// console.log('Change config fired with data ', data);
 		socket.broadcast.emit('changeConfig', data);
 	});
 
