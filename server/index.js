@@ -62,9 +62,13 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('disconnect', () => {
+		io.emit(
+			'user-left',
+			connectedUsers.find((user) => user.id === socket.id)
+		);
 		connectedUsers = connectedUsers.filter((user) => user.id !== socket.id);
 		io.emit('user-list', connectedUsers);
-		io.emit('user-left', { id: socket.id });
+		console.log('Connected users now are ', connectedUsers);
 	});
 });
 
@@ -72,6 +76,6 @@ app.get('/', (req, res) => {
 	res.send('Server is running');
 });
 
-httpServer.listen(5001, () => {
+httpServer.listen(5925, () => {
 	console.log('SERVER IS RUNNING');
 });

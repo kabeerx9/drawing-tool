@@ -6,6 +6,8 @@ import Toolbox from '@/components/toolbox/toolbox';
 
 import { useEffect, useState } from 'react';
 import { socket } from './socket';
+import { useAppDispatch, useAppSelector } from './hooks';
+import { toast } from 'sonner';
 
 export interface IUser {
 	id: string;
@@ -14,7 +16,10 @@ export interface IUser {
 }
 
 const Page = () => {
+	useAppDispatch();
+	useAppSelector((state) => state);
 	const [connectedUsers, setConnectedUsers] = useState<IUser[]>([]);
+	console.log('connectedUsers', connectedUsers);
 
 	useEffect(() => {
 		socket.on('user-list', (users) => {
@@ -22,11 +27,11 @@ const Page = () => {
 		});
 
 		socket.on('user-joined', (user) => {
-			setConnectedUsers((prev) => [...prev, user]);
+			toast.success(`${user.name} joined the room`);
 		});
 
 		socket.on('user-left', (user) => {
-			setConnectedUsers((prev) => prev.filter((u) => u.id !== user.id));
+			toast.error(`${user.name} left the room`);
 		});
 
 		socket.on('connect', () => {
@@ -38,6 +43,7 @@ const Page = () => {
 			socket.off('user-joined');
 			socket.off('user-left');
 			socket.off('connect');
+			socket.emit('disconnect');
 		};
 	}, []);
 
@@ -47,7 +53,8 @@ const Page = () => {
 			<div className="flex items-start w-full">
 				<Toolbox />
 			</div>
-			<Board connectedUsers={connectedUsers} />
+			{/* <Board connectedUsers={connectedUsers} /> */}
+			<Board />
 		</div>
 	);
 };
