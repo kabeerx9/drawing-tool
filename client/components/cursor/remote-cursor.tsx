@@ -1,19 +1,31 @@
+'use client';
 import React, { useEffect, useState } from 'react';
 import { socket } from '@/app/socket';
+import { Pen } from 'lucide-react';
 
-const RemoteCursor = ({ color, name }: { color: string; name: string }) => {
+type RemoteCursorProps = {
+	color: string;
+	name: string;
+	userId: string;
+};
+
+const RemoteCursor = ({ color, name, userId }: RemoteCursorProps) => {
+	console.log('remote cursor re-render');
+
 	const [position, setPosition] = useState({ x: 0, y: 0 });
 
 	useEffect(() => {
+		console.log('Effect re-render in user->', name);
 		const handleCursorMove = (data: {
 			x: number;
 			y: number;
 			userId: string;
 		}) => {
-			console.log('data.userId is ', data.userId);
-			console.log('socket.id is ', socket.id);
-			if (data.userId === socket.id) {
-				console.log('HELLLLOOO JIIIIII');
+			// console.log('data.userId is ', data.userId);
+			// console.log('data.x is ', data.x);
+			// console.log('data.y is ', data.y);
+
+			if (data.userId === userId) {
 				setPosition({ x: data.x, y: data.y });
 			}
 		};
@@ -23,7 +35,7 @@ const RemoteCursor = ({ color, name }: { color: string; name: string }) => {
 		return () => {
 			socket.off('cursor-move', handleCursorMove);
 		};
-	}, [name]);
+	}, []);
 
 	return (
 		<div
@@ -34,7 +46,7 @@ const RemoteCursor = ({ color, name }: { color: string; name: string }) => {
 				pointerEvents: 'none',
 			}}>
 			<svg width="20" height="20">
-				<circle cx="10" cy="10" r="5" fill={color} />
+				<Pen size={20} color={color} />
 			</svg>
 			<span
 				style={{

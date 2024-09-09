@@ -5,9 +5,8 @@ import Menu from '@/components/menu/menu';
 import Toolbox from '@/components/toolbox/toolbox';
 
 import { useEffect, useState } from 'react';
-import { socket } from './socket';
-import { useAppDispatch, useAppSelector } from './hooks';
 import { toast } from 'sonner';
+import { socket } from './socket';
 
 export interface IUser {
 	id: string;
@@ -16,13 +15,12 @@ export interface IUser {
 }
 
 const Page = () => {
-	useAppDispatch();
-	useAppSelector((state) => state);
 	const [connectedUsers, setConnectedUsers] = useState<IUser[]>([]);
 	console.log('connectedUsers', connectedUsers);
 
 	useEffect(() => {
 		socket.on('user-list', (users) => {
+			console.log('User - list event got triggered');
 			setConnectedUsers(users);
 		});
 
@@ -39,6 +37,7 @@ const Page = () => {
 		});
 
 		return () => {
+			console.log('Disconnecting from the server');
 			socket.off('user-list');
 			socket.off('user-joined');
 			socket.off('user-left');
@@ -53,8 +52,7 @@ const Page = () => {
 			<div className="flex items-start w-full">
 				<Toolbox />
 			</div>
-			{/* <Board connectedUsers={connectedUsers} /> */}
-			<Board />
+			<Board connectedUsers={connectedUsers} />
 		</div>
 	);
 };
