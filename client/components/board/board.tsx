@@ -8,15 +8,23 @@ import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { socket } from '@/app/socket';
 import { changeBrushSize, changeColor } from '@/app/store/slices/toolbox-slice';
 import RemoteCursor from '../cursor/remote-cursor';
-import { IUser } from '@/app/page';
+import { IUser } from '@/app/room/[roomId]/page';
 
-const Board = ({ connectedUsers }: { connectedUsers: IUser[] }) => {
-	console.log('Board re-render');
+const Board = ({
+	connectedUsers,
+	roomId,
+	username,
+}: {
+	connectedUsers: IUser[];
+	roomId: string;
+	username: string;
+}) => {
+	console.log('roomId', roomId);
+	console.log('username', username);
 
 	const connectedUsersExcludingMe = connectedUsers.filter(
 		(user) => user.id !== socket.id
 	);
-	console.log('connectedUsersExcludingMe', connectedUsersExcludingMe);
 
 	const dispatch = useAppDispatch();
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -166,6 +174,16 @@ const Board = ({ connectedUsers }: { connectedUsers: IUser[] }) => {
 		socket.on('drawLine', handleDrawLine);
 		socket.on('changeConfig', changeConfigWebSocket);
 
+		// New event listener for canvas history
+
+		socket.on('canvas-history', (history: ImageData[]) => {
+			drawHistory.current = history;
+			drawIndex.current = drawHistory.current.length - 1;
+			if (history.length > 0) {
+				context.putImageData(history[drawIndex.current], 0, 0);
+			}
+		});
+
 		return () => {
 			canvas.removeEventListener('mousedown', handleMouseDown);
 			canvas.removeEventListener('mousemove', handleMouseMove);
@@ -174,6 +192,7 @@ const Board = ({ connectedUsers }: { connectedUsers: IUser[] }) => {
 			socket.off('beginPath', handleBeginPath);
 			socket.off('drawLine', handleDrawLine);
 			socket.off('changeConfig', changeConfigWebSocket);
+			socket.off('canvas-history');
 		};
 	}, []);
 
