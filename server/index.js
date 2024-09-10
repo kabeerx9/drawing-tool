@@ -61,8 +61,14 @@ io.on('connection', (socket) => {
 		});
 	});
 
+	socket.on('checkingConnection', () => {
+		console.log('Checking connection');
+	});
+
 	socket.on('save-canvas', (data) => {
+		console.log('I am inside save-canvas');
 		if (!socket.currentRoom) return;
+		console.log('Saving image in server', data);
 		const room = rooms.get(socket.currentRoom);
 		room.history.push(data);
 	});
@@ -108,7 +114,7 @@ app.get('/', (req, res) => {
 	res.send('Server is running');
 });
 
-const PORT = process.env.PORT || 5925;
+const PORT = process.env.PORT || 8000;
 httpServer.listen(PORT, () => {
 	console.log(`SERVER IS RUNNING ON PORT ${PORT}`);
 });

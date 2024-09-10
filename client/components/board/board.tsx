@@ -9,6 +9,7 @@ import { socket } from '@/app/socket';
 import { changeBrushSize, changeColor } from '@/app/store/slices/toolbox-slice';
 import RemoteCursor from '../cursor/remote-cursor';
 import { IUser } from '@/app/room/[roomId]/page';
+import { serializeImageData } from '@/app/utils/utils';
 
 const Board = ({
 	connectedUsers,
@@ -132,13 +133,17 @@ const Board = ({
 		};
 
 		const handleMouseUp = () => {
+			socket.emit('checkingConnection', null);
+
 			// whenever we move the mouse up we need to save the path to the drawHistory
 			const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
 			drawHistory.current.push(imageData);
 
-			console.log('imageData on mouse up is ', imageData);
+			// we need to send this image data to the server
+			const serializedImageData = serializeImageData(imageData);
+			console.log('I am sending image to the server.');
 
-			socket.emit('save-canvas', { imageData });
+			socket.emit('save-canvas', serializedImageData);
 
 			drawIndex.current = drawHistory.current.length - 1;
 
@@ -181,6 +186,8 @@ const Board = ({
 		// New event listener for canvas history
 
 		socket.on('canvas-history', (history: ImageData[]) => {
+			// need to deserialize data here and also then see whether i want a complete array from the backend or just the latest one.
+
 			drawHistory.current = history;
 			drawIndex.current = drawHistory.current.length - 1;
 			if (history.length > 0) {
