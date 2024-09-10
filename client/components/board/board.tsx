@@ -127,7 +127,7 @@ const Board = ({
 			if (!isDrawing.current) return;
 			drawLine(e.clientX, e.clientY);
 
-			// socket.emit means we are sending a message to the server
+			// socket.emit means we are sending a messagqe to the server
 			socket.emit('drawLine', { x: e.clientX, y: e.clientY });
 		};
 
@@ -135,6 +135,10 @@ const Board = ({
 			// whenever we move the mouse up we need to save the path to the drawHistory
 			const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
 			drawHistory.current.push(imageData);
+
+			console.log('imageData on mouse up is ', imageData);
+
+			socket.emit('save-canvas', { imageData });
 
 			drawIndex.current = drawHistory.current.length - 1;
 

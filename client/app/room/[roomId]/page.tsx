@@ -66,7 +66,7 @@ const RoomPage = () => {
 			</div>
 			<Board
 				connectedUsers={connectedUsers}
-				roomId={roomId}
+				roomId={roomId as string}
 				username={username}
 			/>
 		</div>

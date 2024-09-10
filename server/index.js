@@ -23,6 +23,9 @@ io.on('connection', (socket) => {
 	socket.on('join-room', (data) => {
 		const { roomId, name } = data;
 
+		console.log('roomId', roomId);
+		console.log('name', name);
+
 		// Leave previous room if any
 		if (socket.currentRoom) {
 			socket.leave(socket.currentRoom);
@@ -47,6 +50,7 @@ io.on('connection', (socket) => {
 		room.users.push(userData);
 
 		io.to(roomId).emit('user-list', room.users);
+		console.log('room.history', room.history);
 		socket.emit('canvas-history', room.history);
 		socket.to(roomId).emit('user-joined', userData);
 
@@ -57,6 +61,12 @@ io.on('connection', (socket) => {
 		});
 	});
 
+	socket.on('save-canvas', (data) => {
+		if (!socket.currentRoom) return;
+		const room = rooms.get(socket.currentRoom);
+		room.history.push(data);
+	});
+
 	socket.on('beginPath', (data) => {
 		if (!socket.currentRoom) return;
 		socket.to(socket.currentRoom).emit('beginPath', data);
@@ -65,7 +75,6 @@ io.on('connection', (socket) => {
 	socket.on('drawLine', (data) => {
 		if (!socket.currentRoom) return;
 		const room = rooms.get(socket.currentRoom);
-		room.history.push({ type: 'drawLine', data });
 		socket.to(socket.currentRoom).emit('drawLine', data);
 	});
 

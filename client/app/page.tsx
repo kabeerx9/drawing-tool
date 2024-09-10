@@ -21,7 +21,7 @@ const HomePage = () => {
 		localStorage.setItem('username', username);
 		// join the room now :
 
-		socket.emit('join-room', { roomId, username });
+		socket.emit('join-room', { roomId, name: username });
 		router.push(`/room/${roomId}`);
 	};
 
