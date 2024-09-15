@@ -1,99 +1,135 @@
-const express = require('express');
-const { createServer } = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
+const express = require("express");
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const cors = require("cors");
 
 const app = express();
 app.use(cors());
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-	cors: {},
+  cors: {},
 });
 
-const RANDOM_NAMES = [
-	'Alice',
-	'Bob',
-	'Charlie',
-	'David',
-	'Eve',
-	'Frank',
-	'Grace',
-	'Hank',
-	'Ivy',
-	'Jack',
-];
+const rooms = new Map();
+const randomColors = ["red", "green", "blue", "yellow", "purple", "orange"];
 
-let connectedUsers = [];
+function getRandomColor() {
+  return randomColors[Math.floor(Math.random() * randomColors.length)];
+}
 
-const handleAddUser = (socket) => {
-	const userData = {
-		id: socket.id,
-		name: RANDOM_NAMES[connectedUsers.length],
-		color: '#' + Math.floor(Math.random() * 16777215).toString(16),
-	};
+io.on("connection", (socket) => {
+  console.log("Rooms are ", rooms);
 
-	connectedUsers.push(userData);
+  socket.on("join-room", (data) => {
+    const { roomId, name } = data;
+    console.log(
+      "Someone joined the room with roomid : ",
+      roomId,
+      "and name : ",
+      name,
+    );
 
-	console.log('Connected users: ', connectedUsers);
+    // Leave previous room if any
+    if (socket.currentRoom) {
+      console.log(`${name} was in a room already with room id : ${roomId} `);
+      socket.leave(socket.currentRoom);
+      const oldRoom = rooms.get(socket.currentRoom);
+      if (oldRoom) {
+        oldRoom.users = oldRoom.users.filter((user) => user.id !== socket.id);
+        io.to(socket.currentRoom).emit("user-left", socket.id);
 
-	// Whenever a new user is added we also need to emit a message to all connected users
+        io.to(socket.currentRoom).emit("user-list", oldRoom.users);
+      }
+    }
+    socket.currentRoom = roomId;
+    console.log(`${name} is joining the room with roomId : ${roomId}`);
+    socket.join(roomId);
 
-	// sending it to the new user
-	socket.emit('user-list', connectedUsers);
+    if (!rooms.has(roomId)) {
+      console.log("Rooms does not have this roomId already ");
+      rooms.set(roomId, { users: [], history: [] });
+    }
 
-	// sending it to all other users
-	socket.broadcast.emit('user-list', connectedUsers);
+    const room = rooms.get(roomId);
+    const userData = { id: socket.id, name, color: getRandomColor() };
+    room.users.push(userData);
 
-	// We also need to emit a message to all connected users that a new user has joined
-	socket.broadcast.emit('user-joined', userData);
-};
+    // emitting this event to all the users in the current room including this new user
+    console.log("I have to emit the user-list event to ", room.users);
+    io.to(roomId).emit("user-list", room.users);
 
-io.on('connection', (socket) => {
-	console.log('A user connected');
+    // emitting event to the new user
+    socket.emit("canvas-history", room.history);
 
-	// if user is not added already, add them
-	if (!connectedUsers.some((user) => user.id === socket.id)) {
-		handleAddUser(socket);
-	}
+    // emitting this event to all the users in the current room EXCEPT this user.
+    socket.to(roomId).emit("user-joined", userData);
 
-	socket.on('beginPath', (data) => {
-		socket.broadcast.emit('beginPath', data);
-	});
+    Array.from(rooms.values()).forEach((room) => {
+      console.log("room", room);
+      console.log("room.users", room.users);
+      console.log("room.history", room.history);
+    });
+  });
 
-	socket.on('cursor-move', (data) => {
-		// console.log('Cursor move fired with data ', data);
-		socket.broadcast.emit('cursor-move', data);
-	});
+  socket.on("checkingConnection", () => {
+    console.log("Checking connection");
+  });
 
-	socket.on('drawLine', (data) => {
-		socket.broadcast.emit('drawLine', data);
-	});
+  socket.on("save-canvas", (data) => {
+    console.log("I am inside save-canvas");
+    if (!socket.currentRoom) return;
+    console.log("Saving image in server", data);
+    const room = rooms.get(socket.currentRoom);
+    room.history.push(data);
+  });
 
-	socket.on('changeConfig', (data) => {
-		// console.log('Change config fired with data ', data);
-		socket.broadcast.emit('changeConfig', data);
-	});
+  socket.on("cursor-move", (data) => {
+    if (!socket.currentRoom) return;
+    socket.to(socket.currentRoom).emit("cursor-move", data);
+  });
 
-	socket.on('undo', () => {
-		console.log('I received a message from the client with undo');
-		socket.broadcast.emit('undo');
-	});
+  socket.on("beginPath", (data) => {
+    if (!socket.currentRoom) return;
+    socket.to(socket.currentRoom).emit("beginPath", data);
+  });
 
-	socket.on('disconnect', () => {
-		io.emit(
-			'user-left',
-			connectedUsers.find((user) => user.id === socket.id)
-		);
-		connectedUsers = connectedUsers.filter((user) => user.id !== socket.id);
-		io.emit('user-list', connectedUsers);
-		console.log('Connected users now are ', connectedUsers);
-	});
+  socket.on("drawLine", (data) => {
+    if (!socket.currentRoom) return;
+    const room = rooms.get(socket.currentRoom);
+    socket.to(socket.currentRoom).emit("drawLine", data);
+  });
+
+  socket.on("changeConfig", (data) => {
+    if (!socket.currentRoom) return;
+    socket.to(socket.currentRoom).emit("changeConfig", data);
+  });
+
+  socket.on("undo", () => {
+    if (!socket.currentRoom) return;
+    const room = rooms.get(socket.currentRoom);
+    if (room.history.length > 0) {
+      room.history.pop();
+      io.to(socket.currentRoom).emit("undo");
+    }
+  });
+
+  // socket.on("disconnecting", () => {
+  //   if (socket.currentRoom) {
+  //     const room = rooms.get(socket.currentRoom);
+  //     if (room) {
+  //       room.users = room.users.filter((user) => user.id !== socket.id);
+  //       io.to(socket.currentRoom).emit("user-left", socket.id);
+  //       io.to(socket.currentRoom).emit("user-list", room.users);
+  //     }
+  //   }
+  // });
 });
 
-app.get('/', (req, res) => {
-	res.send('Server is running');
+app.get("/", (req, res) => {
+  res.send("Server is running");
 });
 
-httpServer.listen(5925, () => {
-	console.log('SERVER IS RUNNING');
+const PORT = process.env.PORT || 8000;
+httpServer.listen(PORT, () => {
+  console.log(`SERVER IS RUNNING ON PORT ${PORT}`);
 });
