@@ -1,230 +1,233 @@
-'use client';
+"use client";
 
-import { useAppDispatch, useAppSelector } from '@/app/hooks';
-import { setActionMenuItem } from '@/app/store/slices/menu-slice';
-import { MENU_ITEMS } from '@/app/utils/constants';
-import React, { useEffect, useLayoutEffect, useRef } from 'react';
+import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import { setActionMenuItem } from "@/app/store/slices/menu-slice";
+import { MENU_ITEMS } from "@/app/utils/constants";
+import React, { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
-import { socket } from '@/app/socket';
-import { changeBrushSize, changeColor } from '@/app/store/slices/toolbox-slice';
-import RemoteCursor from '../cursor/remote-cursor';
-import { IUser } from '@/app/room/[roomId]/page';
-import { serializeImageData } from '@/app/utils/utils';
+import SocketService from "@/app/services/socket";
+import { changeBrushSize, changeColor } from "@/app/store/slices/toolbox-slice";
+import RemoteCursor from "../cursor/remote-cursor";
+import { serializeImageData } from "@/app/utils/utils";
 
-const Board = ({
-	connectedUsers,
-	roomId,
-	username,
-}: {
-	connectedUsers: IUser[];
-	roomId: string;
-	username: string;
-}) => {
-	console.log('roomId', roomId);
-	console.log('username', username);
+const Board = () => {
+  const socket = SocketService.getSocket();
 
-	const connectedUsersExcludingMe = connectedUsers.filter(
-		(user) => user.id !== socket.id
-	);
+  const username = localStorage.getItem("username");
+  const dispatch = useAppDispatch();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isDrawing = useRef(false);
 
-	console.log('Connected Users Excluding Me', connectedUsersExcludingMe);
+  const drawHistory = useRef<ImageData[]>([]);
+  const drawIndex = useRef(0);
 
-	const dispatch = useAppDispatch();
-	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const isDrawing = useRef(false);
+  const { isConnected, connectedUsers, roomId } = useAppSelector(
+    (state) => state.socket,
+  );
 
-	const drawHistory = useRef<ImageData[]>([]);
-	const drawIndex = useRef(0);
+  console.log("Connected users in Board.tsx are", connectedUsers);
 
-	const { activeMenuItem, actionMenuItem } = useAppSelector(
-		(state) => state.menu
-	);
-	const { color, size } = useAppSelector(
-		(state) => state.toolbox[activeMenuItem]
-	);
+  const connectedUsersExcludingMe = connectedUsers.filter(
+    (user) => user.name !== username,
+  );
 
-	useEffect(() => {
-		if (!canvasRef.current) return;
-		const canvas = canvasRef.current;
-		const context = canvas.getContext('2d');
+  const { activeMenuItem, actionMenuItem } = useAppSelector(
+    (state) => state.menu,
+  );
+  const { color, size } = useAppSelector(
+    (state) => state.toolbox[activeMenuItem],
+  );
 
-		if (actionMenuItem === MENU_ITEMS.DOWNLOAD) {
-			const URL = canvas.toDataURL();
-			// this URL is a base64 string of the canvas image
+  const drawLine = (x: number, y: number) => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    if (!context) return;
 
-			const a = document.createElement('a');
-			a.download = 'sketch.jpg';
-			a.href = URL;
-			a.click();
-		} else if (actionMenuItem === MENU_ITEMS.UNDO) {
-			if (drawIndex.current === 0) {
-				context?.clearRect(0, 0, canvas.width, canvas.height);
-			}
+    context.lineTo(x, y);
+    context.stroke();
+  };
 
-			if (drawIndex.current > 0) {
-				drawIndex.current -= 1;
-				const imageData = drawHistory.current[drawIndex.current];
-				context?.putImageData(imageData, 0, 0);
-			}
-		} else if (actionMenuItem === MENU_ITEMS.REDO) {
-			if (drawIndex.current < drawHistory.current.length - 1) {
-				drawIndex.current++;
-				const imageData = drawHistory.current[drawIndex.current];
-				context?.putImageData(imageData, 0, 0);
-			}
-		} else if (actionMenuItem === MENU_ITEMS.DELETE) {
-			context?.clearRect(0, 0, canvas.width, canvas.height);
-		}
-		dispatch(setActionMenuItem(null));
-	}, [actionMenuItem, dispatch]);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      socket.emit("cursor-move", {
+        x: e.clientX,
+        y: e.clientY,
+        userId: `${socket.id}`,
+      });
+      if (!isDrawing.current) return;
+      drawLine(e.clientX, e.clientY);
 
-	useEffect(() => {
-		if (!canvasRef.current) return;
-		const canvas = canvasRef.current;
-		const context = canvas.getContext('2d');
-		if (!context) return;
+      // socket.emit means we are sending a messagqe to the server
+      socket.emit("drawLine", { x: e.clientX, y: e.clientY });
+    },
+    [dispatch],
+  );
 
-		const changeConfig = () => {
-			context.strokeStyle = color || 'black';
-			context.lineWidth = size || 3;
-		};
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
 
-		changeConfig();
-	}, [color, size]);
+    if (actionMenuItem === MENU_ITEMS.DOWNLOAD) {
+      const URL = canvas.toDataURL();
+      // this URL is a base64 string of the canvas image
 
-	// Component mount we need to add this stuff , this is the main logic for drawing stuff.
-	// useLayoutEffect is because we want canvas to be rendered first before we add the above useEffect canvas stroke and other stuff.
-	useLayoutEffect(() => {
-		if (!canvasRef.current) return;
-		const canvas = canvasRef.current;
-		const context = canvas.getContext('2d');
-		if (!context) return;
+      const a = document.createElement("a");
+      a.download = "sketch.jpg";
+      a.href = URL;
+      a.click();
+    } else if (actionMenuItem === MENU_ITEMS.UNDO) {
+      if (drawIndex.current === 0) {
+        context?.clearRect(0, 0, canvas.width, canvas.height);
+      }
 
-		canvas.width = window.innerWidth;
-		canvas.height = window.innerHeight;
+      if (drawIndex.current > 0) {
+        drawIndex.current -= 1;
+        const imageData = drawHistory.current[drawIndex.current];
+        context?.putImageData(imageData, 0, 0);
+      }
+    } else if (actionMenuItem === MENU_ITEMS.REDO) {
+      if (drawIndex.current < drawHistory.current.length - 1) {
+        drawIndex.current++;
+        const imageData = drawHistory.current[drawIndex.current];
+        context?.putImageData(imageData, 0, 0);
+      }
+    } else if (actionMenuItem === MENU_ITEMS.DELETE) {
+      context?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    dispatch(setActionMenuItem(null));
+  }, [actionMenuItem, dispatch]);
 
-		const beginPath = (x: number, y: number) => {
-			context.beginPath();
-			context.moveTo(x, y);
-		};
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    if (!context) return;
 
-		const drawLine = (x: number, y: number) => {
-			context.lineTo(x, y);
-			context.stroke();
-		};
+    const changeConfig = () => {
+      context.strokeStyle = color || "black";
+      context.lineWidth = size || 3;
+    };
 
-		const handleMouseDown = (e: MouseEvent) => {
-			isDrawing.current = true;
-			beginPath(e.clientX, e.clientY);
+    changeConfig();
+  }, [color, size]);
 
-			// socket.emit means we are sending a message to the server
-			socket.emit('beginPath', { x: e.clientX, y: e.clientY });
-		};
+  // Component mount we need to add this stuff , this is the main logic for drawing stuff.
+  // useLayoutEffect is because we want canvas to be rendered first before we add the above useEffect canvas stroke and other stuff.
+  useLayoutEffect(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    if (!context) return;
 
-		const handleMouseMove = (e: MouseEvent) => {
-			socket.emit('cursor-move', {
-				x: e.clientX,
-				y: e.clientY,
-				userId: `${socket.id}`,
-			});
-			if (!isDrawing.current) return;
-			drawLine(e.clientX, e.clientY);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-			// socket.emit means we are sending a messagqe to the server
-			socket.emit('drawLine', { x: e.clientX, y: e.clientY });
-		};
+    const beginPath = (x: number, y: number) => {
+      context.beginPath();
+      context.moveTo(x, y);
+    };
 
-		const handleMouseUp = () => {
-			socket.emit('checkingConnection', null);
+    const handleMouseDown = (e: MouseEvent) => {
+      isDrawing.current = true;
+      beginPath(e.clientX, e.clientY);
 
-			// whenever we move the mouse up we need to save the path to the drawHistory
-			const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-			drawHistory.current.push(imageData);
+      // socket.emit means we are sending a message to the server
+      socket.emit("beginPath", { x: e.clientX, y: e.clientY });
+    };
 
-			// we need to send this image data to the server
-			const serializedImageData = serializeImageData(imageData);
-			console.log('I am sending image to the server.', serializedImageData);
+    const handleMouseUp = () => {
+      socket.emit("checkingConnection", null);
 
-			// socket.emit('save-canvas', serializedImageData);
+      // whenever we move the mouse up we need to save the path to the drawHistory
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      drawHistory.current.push(imageData);
 
-			drawIndex.current = drawHistory.current.length - 1;
+      // we need to send this image data to the server
+      const serializedImageData = serializeImageData(imageData);
+      console.log("I am sending image to the server.", serializedImageData);
 
-			isDrawing.current = false;
-			context.closePath();
-		};
+      // socket.emit('save-canvas', serializedImageData);
 
-		const changeConfigWebSocket = (data: {
-			item: string;
-			size: string;
-			color: string;
-		}) => {
-			console.log('Websocket change config was fired ', data);
-			if (data.color) {
-				dispatch(changeColor({ item: activeMenuItem, color: data.color }));
-			}
-			if (data.size) {
-				dispatch(changeBrushSize({ item: activeMenuItem, size: data.size }));
-			}
-		};
+      drawIndex.current = drawHistory.current.length - 1;
 
-		canvas.addEventListener('mousedown', handleMouseDown);
-		canvas.addEventListener('mousemove', handleMouseMove);
-		canvas.addEventListener('mouseup', handleMouseUp);
+      isDrawing.current = false;
+      context.closePath();
+    };
 
-		// socket.on means we are listening to the server
+    const changeConfigWebSocket = (data: {
+      item: string;
+      size: string;
+      color: string;
+    }) => {
+      console.log("Websocket change config was fired ", data);
+      if (data.color) {
+        dispatch(changeColor({ item: activeMenuItem, color: data.color }));
+      }
+      if (data.size) {
+        dispatch(changeBrushSize({ item: activeMenuItem, size: data.size }));
+      }
+    };
 
-		const handleBeginPath = (data: { x: number; y: number }) => {
-			beginPath(data.x, data.y);
-		};
+    canvas.addEventListener("mousedown", handleMouseDown);
+    canvas.addEventListener("mousemove", handleMouseMove);
+    canvas.addEventListener("mouseup", handleMouseUp);
 
-		const handleDrawLine = (data: { x: number; y: number }) => {
-			drawLine(data.x, data.y);
-		};
+    // socket.on means we are listening to the server
 
-		socket.on('beginPath', handleBeginPath);
-		socket.on('drawLine', handleDrawLine);
-		socket.on('changeConfig', changeConfigWebSocket);
+    const handleBeginPath = (data: { x: number; y: number }) => {
+      beginPath(data.x, data.y);
+    };
 
-		// New event listener for canvas history
+    const handleDrawLine = (data: { x: number; y: number }) => {
+      drawLine(data.x, data.y);
+    };
 
-		socket.on('canvas-history', (history: ImageData[]) => {
-			// need to deserialize data here and also then see whether i want a complete array from the backend or just the latest one.
+    socket.on("beginPath", handleBeginPath);
+    socket.on("drawLine", handleDrawLine);
+    socket.on("changeConfig", changeConfigWebSocket);
 
-			drawHistory.current = history;
-			drawIndex.current = drawHistory.current.length - 1;
-			if (history.length > 0) {
-				context.putImageData(history[drawIndex.current], 0, 0);
-			}
-		});
+    // New event listener for canvas history
 
-		return () => {
-			canvas.removeEventListener('mousedown', handleMouseDown);
-			canvas.removeEventListener('mousemove', handleMouseMove);
-			canvas.removeEventListener('mouseup', handleMouseUp);
+    socket.on("canvas-history", (history: ImageData[]) => {
+      // need to deserialize data here and also then see whether i want a complete array from the backend or just the latest one.
 
-			socket.off('beginPath', handleBeginPath);
-			socket.off('drawLine', handleDrawLine);
-			socket.off('changeConfig', changeConfigWebSocket);
-			socket.off('canvas-history');
-		};
-	}, []);
+      drawHistory.current = history;
+      drawIndex.current = drawHistory.current.length - 1;
+      if (history.length > 0) {
+        context.putImageData(history[drawIndex.current], 0, 0);
+      }
+    });
 
-	return (
-		<>
-			<canvas
-				ref={canvasRef}
-				className="absolute top-0 left-0 w-full h-full bg-white"
-			/>
-			{connectedUsersExcludingMe?.map((user) => (
-				<RemoteCursor
-					key={user.id}
-					name={user.name}
-					userId={user.id}
-					color={user.color}
-				/>
-			))}
-		</>
-	);
+    return () => {
+      canvas.removeEventListener("mousedown", handleMouseDown);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+      canvas.removeEventListener("mouseup", handleMouseUp);
+
+      socket.off("beginPath", handleBeginPath);
+      socket.off("drawLine", handleDrawLine);
+      socket.off("changeConfig", changeConfigWebSocket);
+      socket.off("canvas-history");
+    };
+  }, []);
+
+  return (
+    <>
+      <canvas
+        ref={canvasRef}
+        className="absolute top-0 left-0 w-full h-full bg-white"
+      />
+      {connectedUsersExcludingMe?.map((user) => (
+        <RemoteCursor
+          key={user.id}
+          name={user.name}
+          userId={user.id}
+          color={user.color}
+        />
+      ))}
+    </>
+  );
 };
 
 export default Board;

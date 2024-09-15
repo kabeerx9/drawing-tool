@@ -1,82 +1,47 @@
-'use client';
+"use client";
 
-import Board from '@/components/board/board';
-import Menu from '@/components/menu/menu';
-import Toolbox from '@/components/toolbox/toolbox';
+import Board from "@/components/board/board";
+import Menu from "@/components/menu/menu";
+import Toolbox from "@/components/toolbox/toolbox";
 
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { socket } from '@/app/socket';
-import { useParams, useRouter } from 'next/navigation';
-export interface IUser {
-	id: string;
-	name: string;
-	color: string;
-}
+import { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import { initializeSocket, joinRoom } from "@/app/store/slices/socketSlice";
 
 const RoomPage = () => {
-	const router = useRouter();
-	const [connectedUsers, setConnectedUsers] = useState<IUser[]>([]);
-	const { roomId } = useParams();
-	const [username, setUsername] = useState('');
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const { roomId } = useParams();
 
-	useEffect(() => {
-		const storedUsername = localStorage.getItem('username');
-		if (storedUsername) {
-			setUsername(storedUsername);
-		} else {
-			router.push('/');
-		}
+  const { isConnected, connectedUsers } = useAppSelector(
+    (state) => state.socket,
+  );
 
-		// JOIN THE ROOM
-		socket.emit('join-room', { roomId, name: storedUsername });
+  useEffect(() => {
+    dispatch(initializeSocket());
+  }, [dispatch]);
 
-		socket.on('user-list', (users) => {
-			console.log('user list event got sent from backend');
-			setConnectedUsers(users);
-		});
-		console.log('Connected Users', connectedUsers);
+  useEffect(() => {
+    if (isConnected && roomId) {
+      const username = localStorage.getItem("username");
+      if (username) {
+        dispatch(joinRoom(roomId as string, username));
+      } else {
+        router.push("/");
+      }
+    }
+  }, [isConnected, roomId, dispatch, router]);
 
-		socket.on('user-joined', (user) => {
-			console.log('Someone joined the room baby');
-			toast.success(`${user.name} joined the room`);
-		});
-
-		socket.on('user-left', (userId) => {
-			setConnectedUsers((prevUsers) => {
-				const userLeft = prevUsers.find((user) => user.id === userId);
-				if (userLeft) {
-					toast.error(`${userLeft.name} left the room`);
-				}
-				return prevUsers.filter((user) => user.id !== userId);
-			});
-		});
-
-		socket.on('connect', () => {
-			console.log('Connected to the server');
-		});
-
-		return () => {
-			socket.off('user-list');
-			socket.off('user-joined');
-			socket.off('user-left');
-			socket.off('connect');
-		};
-	}, [roomId]);
-
-	return (
-		<div className="w-full h-full flex flex-col items-center">
-			<Menu />
-			<div className="flex items-start w-full">
-				<Toolbox />
-			</div>
-			<Board
-				connectedUsers={connectedUsers}
-				roomId={roomId as string}
-				username={username}
-			/>
-		</div>
-	);
+  return (
+    <div className="w-full h-full flex flex-col items-center">
+      <Menu />
+      <div className="flex items-start w-full">
+        <Toolbox />
+      </div>
+      <Board />
+    </div>
+  );
 };
 
 export default RoomPage;
