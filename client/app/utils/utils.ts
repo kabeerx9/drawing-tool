@@ -6,8 +6,7 @@ export const serializeImageData = (imageData: ImageData) => {
 	};
 };
 
-
-export const deserializeImageData = (imageData: any) => {
+export const deserializeImageData = (imageData: ImageData) => {
 	const { width, height, data } = imageData;
 	return new ImageData(new Uint8ClampedArray(data), width, height);
 };

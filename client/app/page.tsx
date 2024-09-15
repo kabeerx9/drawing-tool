@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { socket } from './socket';
 
 const HomePage = () => {
 	const [roomId, setRoomId] = useState('');
@@ -21,7 +20,6 @@ const HomePage = () => {
 		localStorage.setItem('username', username);
 		// join the room now :
 
-		socket.emit('join-room', { roomId, name: username });
 		router.push(`/room/${roomId}`);
 	};
 
