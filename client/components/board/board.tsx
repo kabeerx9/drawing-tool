@@ -25,6 +25,8 @@ const Board = () => {
     (state) => state.socket,
   );
 
+  console.log(isConnected, roomId);
+
   console.log("Connected users in Board.tsx are", connectedUsers);
 
   const connectedUsersExcludingMe = connectedUsers.filter(

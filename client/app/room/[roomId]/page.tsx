@@ -8,7 +8,6 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { initializeSocket, joinRoom } from "@/app/store/slices/socketSlice";
-import { Divide } from "lucide-react";
 
 const RoomPage = () => {
   console.log("Room page render ");
@@ -21,6 +20,8 @@ const RoomPage = () => {
   const { isConnected, connectedUsers } = useAppSelector(
     (state) => state.socket,
   );
+
+  console.log("Connected users are ", connectedUsers);
 
   useLayoutEffect(() => {
     console.log("use Layout Effect ");

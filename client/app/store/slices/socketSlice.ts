@@ -98,7 +98,7 @@ export const joinRoom =
     dispatch(setRoomId(roomId));
   };
 
-export const emitEvent = (event: string, data: any) => () => {
+export const emitEvent = (event: string, data: ImageData) => () => {
   const socket = SocketService.getSocket();
   socket.emit(event, data);
 };
