@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import SocketService from "../../services/socket";
+import { toast } from "sonner";
 
 interface User {
   id: string;
@@ -34,6 +35,10 @@ const socketSlice = createSlice({
       state.connectedUsers.push(action.payload);
     },
     removeUser: (state, action: PayloadAction<string>) => {
+      const username = state.connectedUsers.find(
+        (user) => user.id === action.payload,
+      );
+      toast.error(`${username} left your room!!!`);
       state.connectedUsers = state.connectedUsers.filter(
         (user) => user.id !== action.payload,
       );
@@ -72,6 +77,7 @@ export const initializeSocket = () => (dispatch: AppDispatch) => {
 
   socket.on("user-joined", (user: User) => {
     dispatch(addUser(user));
+    toast.success(`${user.name} joined the room !!`);
   });
 
   socket.on("user-left", (userId: string) => {

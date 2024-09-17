@@ -47,7 +47,7 @@ io.on("connection", (socket) => {
 
     if (!rooms.has(roomId)) {
       console.log("Rooms does not have this roomId already ");
-      rooms.set(roomId, { users: [], history: [] });
+      rooms.set(roomId, { users: [], history: [], currentIndex: -1 });
     }
 
     const room = rooms.get(roomId);
@@ -81,6 +81,7 @@ io.on("connection", (socket) => {
     console.log("Saving image in server", data);
     const room = rooms.get(socket.currentRoom);
     room.history.push(data);
+    console.log("room history is now ", room.history);
   });
 
   socket.on("cursor-move", (data) => {

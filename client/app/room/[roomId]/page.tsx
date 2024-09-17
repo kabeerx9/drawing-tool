@@ -10,7 +10,6 @@ import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { initializeSocket, joinRoom } from "@/app/store/slices/socketSlice";
 
 const RoomPage = () => {
-  console.log("Room page render ");
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { roomId } = useParams();
@@ -21,17 +20,13 @@ const RoomPage = () => {
     (state) => state.socket,
   );
 
-  console.log("Connected users are ", connectedUsers);
-
   useLayoutEffect(() => {
-    console.log("use Layout Effect ");
     const cleanup = dispatch(initializeSocket());
     setSocketInitialized(true);
     return cleanup;
   }, [dispatch]);
 
   useLayoutEffect(() => {
-    console.log("use Layout Effect ");
     const cleanup = dispatch(initializeSocket());
 
     return cleanup;

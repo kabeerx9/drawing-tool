@@ -25,10 +25,6 @@ const Board = () => {
     (state) => state.socket,
   );
 
-  console.log(isConnected, roomId);
-
-  console.log("Connected users in Board.tsx are", connectedUsers);
-
   const connectedUsersExcludingMe = connectedUsers.filter(
     (user) => user.name !== username,
   );
@@ -139,9 +135,8 @@ const Board = () => {
       socket.emit("beginPath", { x: e.clientX, y: e.clientY });
     };
 
-    const handleMouseUp = () => {
-      socket.emit("checkingConnection", null);
-
+    const handleMouseUp = (e: MouseEvent) => {
+      e.preventDefault();
       // whenever we move the mouse up we need to save the path to the drawHistory
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       drawHistory.current.push(imageData);
@@ -150,7 +145,18 @@ const Board = () => {
       const serializedImageData = serializeImageData(imageData);
       console.log("I am sending image to the server.", serializedImageData);
 
-      // socket.emit('save-canvas', serializedImageData);
+      // Check the size of the serialized data
+      const dataSize = JSON.stringify(serializedImageData).length;
+      console.log(`Serialized data size: ${dataSize} bytes`);
+
+      // If the size is larger than 1MB, log a warning
+      if (dataSize > 1 * 1024 * 1024) {
+        console.warn(
+          `Data size (${dataSize} bytes) exceeds 1MB. This may cause issues with WebSocket transmission.`,
+        );
+      }
+
+      // socket.emit("save-canvas", serializedImageData);
 
       drawIndex.current = drawHistory.current.length - 1;
 
@@ -193,6 +199,7 @@ const Board = () => {
     // New event listener for canvas history
 
     socket.on("canvas-history", (history: ImageData[]) => {
+      console.log("CANVAS HISTORY ON CLINET BOIIIIIIIIIIII");
       // need to deserialize data here and also then see whether i want a complete array from the backend or just the latest one.
 
       drawHistory.current = history;
