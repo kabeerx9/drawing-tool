@@ -1,12 +1,16 @@
 export const serializeImageData = (imageData: ImageData) => {
-	return {
-		data: imageData.data,
-		width: imageData.width,
-		height: imageData.height,
-	};
+  return {
+    data: Array.from(imageData.data),
+    width: imageData.width,
+    height: imageData.height,
+  };
 };
 
-export const deserializeImageData = (imageData: ImageData) => {
-	const { width, height, data } = imageData;
-	return new ImageData(new Uint8ClampedArray(data), width, height);
+const deserializeImageData = (serializedData: any) => {
+  const imageData = new ImageData(
+    new Uint8ClampedArray(serializedData.data),
+    serializedData.width,
+    serializedData.height,
+  );
+  return imageData;
 };

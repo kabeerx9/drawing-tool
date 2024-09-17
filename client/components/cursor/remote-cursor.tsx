@@ -12,21 +12,15 @@ type RemoteCursorProps = {
 
 const RemoteCursor = ({ color, name, userId }: RemoteCursorProps) => {
   const socket = SocketService.getSocket();
-  console.log("remote cursor re-render");
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
-    console.log("Effect re-render in user->", name);
     const handleCursorMove = (data: {
       x: number;
       y: number;
       userId: string;
     }) => {
-      // console.log('data.userId is ', data.userId);
-      // console.log('data.x is ', data.x);
-      // console.log('data.y is ', data.y);
-
       if (data.userId === userId) {
         setPosition({ x: data.x, y: data.y });
       }
