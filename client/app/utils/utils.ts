@@ -6,11 +6,11 @@ export const serializeImageData = (imageData: ImageData) => {
   };
 };
 
-const deserializeImageData = (serializedData: any) => {
-  const imageData = new ImageData(
-    new Uint8ClampedArray(serializedData.data),
-    serializedData.width,
-    serializedData.height,
-  );
-  return imageData;
-};
+// const deserializeImageData = (serializedData: any) => {
+//   const imageData = new ImageData(
+//     new Uint8ClampedArray(serializedData.data),
+//     serializedData.width,
+//     serializedData.height,
+//   );
+//   return imageData;
+// };

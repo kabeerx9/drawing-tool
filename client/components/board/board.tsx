@@ -24,6 +24,10 @@ const Board = () => {
   const { isConnected, connectedUsers, roomId } = useAppSelector(
     (state) => state.socket,
   );
+  console.log("connectedUsers", connectedUsers);
+  console.log("username", username);
+  console.log("isConnected", isConnected);
+  console.log("roomId", roomId);
 
   const connectedUsersExcludingMe = connectedUsers.filter(
     (user) => user.name !== username,

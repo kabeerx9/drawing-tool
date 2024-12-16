@@ -19,6 +19,7 @@ const RoomPage = () => {
   const { isConnected, connectedUsers } = useAppSelector(
     (state) => state.socket,
   );
+  console.log("connectedUsers in room id page ", connectedUsers);
 
   useLayoutEffect(() => {
     const cleanup = dispatch(initializeSocket());
